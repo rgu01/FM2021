@@ -1,5 +1,5 @@
 chmod +x *.*
-chmod +x verifyta
+chmod +x ../verifyta
 ../verifyta -o1 -u verification1-avoid.xml > results/avoid1.txt
 ../verifyta -o1 -u verification1-reach.xml > results/reach2.txt
 ../verifyta -o1 -u verification2-avoid.xml > results/avoid2.txt
