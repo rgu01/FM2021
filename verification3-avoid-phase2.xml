@@ -124,7 +124,7 @@ const int STEPHEAD = 393;
 const int PTS = 50;
 const int PTE = 51;
 
-import "projects/lib/lib.so" {
+import "FM2021/lib/lib.so" {
     int getProjection(int value, int angle, int axis);
     int getAngle(int sX, int sY, int eX, int eY, int scale);
     int getDisPointToLine(int px, int py, int sx, int sy, int ex, int ey);
