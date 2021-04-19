@@ -1,0 +1,1272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+typedef struct
+{
+    int w;
+    int heading;
+}RotationalState;
+
+typedef struct
+{
+    int acc;
+    int speed;
+}LinearState;
+
+typedef struct
+{
+    int x;
+    int y;
+}Point;
+
+typedef struct
+{
+    int numVertices;
+    Point vertices[10];
+}StaticObstacle;
+
+const int PM = 1; //period of movement
+const int PC = 2; //period of control
+const int PS = 3; //period of sensing
+
+const int PI = 3142;
+const int ANGLESCALE = 1000; //1 radian=1000 miliradian
+const int POSITIONSCALE = 10; //1m = 10*10cm
+
+const int AVVECTOR = 1;
+const int POSITIONID = 0;
+const int AVSCALAR = 4;
+const int WID = 0;
+const int HEADID = 1;
+const int ACCID = 2;
+const int SPEEDID = 3;
+const int CONSTRATE = -1;
+
+const int SPACEDIMENSION = 2;
+const int X = 0;
+const int Y = 1;
+const int NOTDIMENSIONAL = -1;
+//Max number of moving obstacles
+const int NUMOBS = 2;
+const int ACTUALOBS = 1;
+const int NUMAV = 1;
+//const int INITOBS[NUMOBS][AVDIMENSION] = {{0,0,0,0,0}};
+//MAX: time unit - 500ms = 0.5s
+const int MAXSCALAR[AVSCALAR] = {393, //w:PI/-PI in 4s = 393 miliradian/500ms
+                                 PI,  //heading: PI miliradian
+                                 7,   //acc: to 20km/h:4s
+                                 8};  //speed: 20000m*10cm/60*60*2 (20km/h)
+const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{100*POSITIONSCALE}, {100*POSITIONSCALE}}; //position: 3000(10cm) * 10 = 3000m
+//MAX OBS: time unit - 500ms = 0.5s
+const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //w:PI/-PI in 4s = 393 miliradian/500ms
+                                             PI,  //heading: PI miliradian
+                                             7,   //acc: to 20km/h:4s
+                                             5},
+                                            {393, //w:PI/-PI in 4s = 393 miliradian/500ms
+                                             PI,  //heading: PI miliradian
+                                             7,   //acc: to 20km/h:4s
+                                             5}};  //speed: 20000m*10cm/60*60*2 (20km/h)
+const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{100*POSITIONSCALE}, {100*POSITIONSCALE}},{{100*POSITIONSCALE}, {100*POSITIONSCALE}}}; //position: 3000(10cm) * 10 = 3000m
+                             
+//MIN: time unit - 500ms = 0.5s
+const int MINSCALAR[AVSCALAR] = {-393, //w:PI/-PI in 4s
+                                 -PI,  //heading: -PI/2 miliradian
+                                 -10,  //acc: from 20km/h:3s
+                                 0};    //speed: 0
+const int MINVECTOR[AVVECTOR][SPACEDIMENSION] = {{0},{0}};   //position:0
+//MIN: time unit - 500ms = 0.5s
+const int MINSCALAROBS[NUMOBS][AVSCALAR] = {{-393, //w:PI/-PI in 4s
+                                             -PI,  //heading: -PI/2 miliradian
+                                             -10,  //acc: from 20km/h:3s
+                                             5},
+                                            {-393, //w:PI/-PI in 4s
+                                             -PI,  //heading: -PI/2 miliradian
+                                             -10,  //acc: from 20km/h:3s
+                                             5}};    //speed: 0
+const int MINVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{0},{0}},{{0},{0}}};   //position:0
+//const int AVNORMALSPEED = MAXSCALAR[SPEEDID]/2;
+//INIT
+const int INITSCALAR[AVSCALAR] = {0,PI/4,MAXSCALAR[ACCID],MAXSCALAR[SPEEDID]};
+const int INITVECTOR[AVVECTOR][SPACEDIMENSION] = {{90*POSITIONSCALE},{0*POSITIONSCALE}};
+
+const int VIEWRADIUS = MAXSCALAROBS[0][SPEEDID]*PS*2;
+const int FARRADIUS = MAXSCALAROBS[0][SPEEDID]*PS*3;
+//width of the safe region
+int widthSafeRegion = 5;
+
+const int NUMSTATICOBSS = 1;
+const int NUMSTATICOBSVERDICES = 4;
+const Point staticObsVerdices[NUMSTATICOBSVERDICES] = {{2,2},{2,5},{9,5},{9,2}};
+
+
+const int NUMWAYPOINTS = 1;
+const int LENGTHPATH = NUMWAYPOINTS + 1;
+const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{30*POSITIONSCALE,10*POSITIONSCALE}};
+const Point avpath[LENGTHPATH] = {{INITVECTOR[POSITIONID][X],INITVECTOR[POSITIONID][Y]},{WAYPOINTS[0][X],WAYPOINTS[0][Y]}};
+
+
+const int UNKNOWN = 0;
+const int MOVING = 1;     //move straightly
+const int TURNING = 2;    //turn direction
+const int ARRIVING = 3;    //arriving
+const int AVOIDING = 4;
+
+const int VINIT = 1;
+const int GINIT = 2;
+const int CRITICALLENGTH = 2;
+
+const int STEPPOS = 50;
+//const int STEPACC = 5;
+const int STEPSPEED = 10;
+const int STEPW = 393;
+const int STEPHEAD = 393;
+const int PTS = 50;
+const int PTE = 51;
+
+import "projects/lib/lib.so" {
+    int getProjection(int value, int angle, int axis);
+    int getAngle(int sX, int sY, int eX, int eY, int scale);
+    int getDisPointToLine(int px, int py, int sx, int sy, int ex, int ey);
+    int getDisPointToPoint(int x1, int y1, int x2, int y2);
+    int getValidRange(int length, int angle, int scale);
+
+    void collisionAvoidance(int obsNum, int &amp;appeared[ACTUALOBS], int staticObsNum, Point &amp;staticObsVerdices[NUMSTATICOBSVERDICES], int &amp;probe[1], Point &amp;obsPosition[ACTUALOBS], RotationalState &amp;rotationalObsStates[ACTUALOBS], LinearState &amp;linearObsStates[ACTUALOBS], 
+    Point &amp;avPosition[NUMAV], RotationalState &amp;rotationalAVStates[NUMAV], LinearState &amp;linearAVStates[NUMAV], Point &amp;goalPosition[NUMAV], 
+    Point &amp;path[2], int pathLen, RotationalState &amp;rotationalGoalStates[NUMAV], LinearState &amp;linearGoalStates[NUMAV]);
+};
+//int obsNum = 0;
+int waypointsIndex = 0;
+//GOAL
+int goalScalar[AVSCALAR] = {MAXSCALAR[WID],PI/4,MAXSCALAR[ACCID],MAXSCALAR[SPEEDID]};
+int goalVector[AVVECTOR][SPACEDIMENSION] = {{MAXVECTOR[POSITIONID][X]},{MAXVECTOR[POSITIONID][Y]}};
+//int goalProjection[AVDIMENSION][SPACEDIMENSION];
+//variables of the autonomous vehicle
+int avScalarVariables[AVSCALAR] = {INITSCALAR[WID],INITSCALAR[HEADID],INITSCALAR[ACCID],INITSCALAR[SPEEDID]};
+int avVectorVariables[AVVECTOR][SPACEDIMENSION] = {{INITVECTOR[POSITIONID][X]},{INITVECTOR[POSITIONID][Y]}};
+//int criticalIndex = 0;
+//int criticalSegment[CRITICALLENGTH][SPACEDIMENSION] = {{0,0},{0,0}};
+//bool avStop = false;
+bool collided = false;
+int appeared[ACTUALOBS] = {0};
+//variables of the moving obstacles
+int obsScalarVariables[ACTUALOBS][AVSCALAR];
+int obsVectorVariables[ACTUALOBS][AVVECTOR][SPACEDIMENSION];
+int minOut[SPACEDIMENSION], minIn[SPACEDIMENSION], maxOut[SPACEDIMENSION], maxIn[SPACEDIMENSION];
+//channels
+chan obsLeft;
+broadcast chan start, stop, invoke, proceed, stay, change, obsGo[ACTUALOBS];
+
+clock time;
+
+int distance;
+bool isCollide(int obsID)
+{
+    distance = MAXVECTOR[POSITIONID][X];
+
+    if(appeared[obsID])
+    {
+        distance = getDisPointToPoint(obsVectorVariables[obsID][POSITIONID][X], obsVectorVariables[obsID][POSITIONID][Y], 
+                          avVectorVariables[POSITIONID][X], avVectorVariables[POSITIONID][Y]);
+        /*distance = getDisPointToLine(obsVectorVariables[obsID][POSITIONID][X], obsVectorVariables[obsID][POSITIONID][Y],
+                          criticalSegment[0][X],criticalSegment[0][Y],criticalSegment[1][X],criticalSegment[1][Y]);*/
+        if(distance &lt; widthSafeRegion)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        return false;
+    }
+
+    return false;
+}
+
+bool hitWall()
+{
+    int i = 0;
+    bool hit = false;
+
+    for(i = 0; i &lt; SPACEDIMENSION; i++)
+    {
+        hit = (avVectorVariables[POSITIONID][i]==MAXVECTOR[POSITIONID][i]) || (avVectorVariables[POSITIONID][i]==MINVECTOR[POSITIONID][i]);
+        if(hit)return hit;
+    }
+    
+    return hit;
+}
+
+</declaration>
+	<template>
+		<name x="5" y="5">AVVariable</name>
+		<parameter>const int VID, const int RATEID, const int SPACEID</parameter>
+		<declaration>void update()
+{
+    int rateValue = 0, overshoot = 0, direction = 0;
+    int currentAngle = avScalarVariables[HEADID];
+    //rateValue = 0;overshoot = 0;direction = 0;
+    //if the variable does not change at a constant rate: speed, position, heading
+    //its rate refers to the corresponding variable
+    if(RATEID != CONSTRATE)
+    {
+        rateValue = avScalarVariables[RATEID];
+    }
+    //if the variable changes at a constant rate: acceleration, angular speed
+    //its rate is the difference between its current value and its goal
+    //which means it goes to its goal value in one time unit
+    else
+    {
+        rateValue = goalScalar[VID] - avScalarVariables[VID];
+    }
+    //if the rate is not zero, we calculate the variable's changing direction: +1/-1
+    if(rateValue != 0)
+    {
+        direction = rateValue/abs(rateValue);
+    }
+    //if the variable is dimensional: position
+    //its changing rate is projected to the corresponding axies
+    if(SPACEID != NOTDIMENSIONAL)
+    {
+        rateValue = getProjection(rateValue, currentAngle, SPACEID);
+        avVectorVariables[VID][SPACEID] += rateValue;
+        if(avVectorVariables[VID][SPACEID] &gt; MAXVECTOR[VID][SPACEID])
+        {
+            avVectorVariables[VID][SPACEID] = MAXVECTOR[VID][SPACEID];
+        }
+        else if(avVectorVariables[VID][SPACEID] &lt; MINVECTOR[VID][SPACEID])
+        {
+            avVectorVariables[VID][SPACEID] = MINVECTOR[VID][SPACEID];
+        }
+        //criticalSegment[criticalIndex][SPACEID] = avVectorVariables[VID][SPACEID];
+        /*overshoot = direction * (goalVector[VID][SPACEID] - avVectorVariables[VID][SPACEID]);
+        if(overshoot &lt; 0)
+        {
+            avVectorVariables[VID][SPACEID] = goalVector[VID][SPACEID];
+        }*/
+    }
+    else
+    {
+        avScalarVariables[VID] += rateValue;
+        overshoot = direction * (goalScalar[VID] - avScalarVariables[VID]);
+        if(overshoot &lt; 0)
+        {
+            avScalarVariables[VID] = goalScalar[VID];
+        }
+        if(RATEID != CONSTRATE &amp;&amp; goalScalar[VID] == avScalarVariables[VID])
+        {
+            rateValue = avScalarVariables[RATEID];
+            avScalarVariables[RATEID] = 0;
+            goalScalar[RATEID] = 0;
+        }
+    }
+    //the variable overshoots its goal value,
+    //which means a negative value of goal minus current value times the direction means an overshooting, 
+    // e.g., when the goal value is negative: -5, and the current value is -4 or -6:
+    //e.g., -5 - (-4) = -1, (-1)*(-1)=1 (no overshoot);
+    //but, -5 - (-6) = +1, 1*(-1) = -1 (overshoot)
+    //or when the goal value is positive: 5, and the current value is 4 or 6:
+    //e.g., 5 - 4 = 1, 1*1=1(no overshoot), 
+    //but, 5 - 6 = -1, (-1)*1=-1(overshoot) 
+}
+
+bool reach()
+{
+    bool result = false;
+
+    if(SPACEID != NOTDIMENSIONAL)
+    {
+        //result = (avVectorVariables[VID][SPACEID] == goalVector[VID][SPACEID]);
+    }
+    else
+    {
+        result = (avScalarVariables[VID] == goalScalar[VID]);
+    }
+
+    return result;
+}
+</declaration>
+		<location id="id0" x="-127" y="-68">
+			<name x="-203" y="-85">MOVING</name>
+		</location>
+		<location id="id1" x="51" y="-161">
+			<name x="-8" y="-195">CONSTANT</name>
+		</location>
+		<location id="id2" x="-127" y="-161">
+			<name x="-178" y="-195">CHANGING</name>
+		</location>
+		<location id="id3" x="-280" y="-161">
+			<name x="-272" y="-195">WAIT</name>
+		</location>
+		<init ref="id3"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-68" y="-178">change?</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-17" y="-102">reach()</label>
+			<label kind="synchronisation" x="-17" y="-85">stay?</label>
+			<nail x="51" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-68" y="-136">!reach()</label>
+			<label kind="synchronisation" x="-68" y="-119">proceed?</label>
+			<nail x="-50" y="-93"/>
+			<nail x="-50" y="-135"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-186" y="-135">invoke?</label>
+			<label kind="assignment" x="-195" y="-119">update()</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-229" y="-178">start?</label>
+		</transition>
+	</template>
+	<template>
+		<name>AVController</name>
+		<declaration>clock timer;
+int[0,4] status = UNKNOWN;
+int[0,4] oldStatus = UNKNOWN;
+
+void initialize()
+{
+    int i = 0;
+    for(i = 0; i &lt; SPACEDIMENSION; i++)
+    {
+        goalVector[POSITIONID][i] = WAYPOINTS[waypointsIndex][i]; 
+        avVectorVariables[POSITIONID][i] = INITVECTOR[POSITIONID][i];
+    }
+}
+
+int modify(Point obsPosition[ACTUALOBS], Point avPosition, int newHeading_v, int originalHeading)
+{
+    bool shouldModify = true;
+    int modified = 0;
+    int oldDistance = 0, newDistance = 0, obsNewHeading = 0, newHeading_l = 0;
+    Point originalNewPosition, newPosition, obsNewPosition;
+    int i = 0;
+    modified = 0;
+    newHeading_l = newHeading_v;
+
+	newPosition.x = avPosition.x + getProjection(avScalarVariables[SPEEDID], newHeading_v, X);
+	newPosition.y = avPosition.y + getProjection(avScalarVariables[SPEEDID], newHeading_v, Y);
+
+	originalNewPosition.x = avPosition.x + getProjection(avScalarVariables[SPEEDID], originalHeading, X);
+	originalNewPosition.y = avPosition.y + getProjection(avScalarVariables[SPEEDID], originalHeading, Y);
+    
+    for(i = 0; i&lt; ACTUALOBS; i++)
+    {
+        if(appeared[i] == 1)
+        {
+            obsNewHeading = obsScalarVariables[i][HEADID] + obsScalarVariables[i][WID];
+	        obsNewPosition.x = obsPosition[i].x + getProjection(obsScalarVariables[i][SPEEDID], obsNewHeading, X);
+	        obsNewPosition.y = obsPosition[i].y + getProjection(obsScalarVariables[i][SPEEDID], obsNewHeading, Y);
+	        oldDistance = getDisPointToPoint(originalNewPosition.x, originalNewPosition.y, obsNewPosition.x, obsNewPosition.y);
+	        newDistance = getDisPointToPoint(newPosition.x, newPosition.y, obsNewPosition.x, obsNewPosition.y);
+            if (newDistance &lt;= oldDistance)
+	        {
+                shouldModify &amp;= true;
+            }
+            else
+            {
+                shouldModify &amp;= false;
+                if(oldDistance &lt; widthSafeRegion + 2 || newDistance &lt; widthSafeRegion + 2)
+                {
+                    shouldModify = true;
+                }
+            }
+        }
+    }
+    if(shouldModify)
+    {
+        modified = 1;
+        //new position of AV
+		newHeading_l = avScalarVariables[HEADID];	
+        newPosition.x = avPosition.x + getProjection(avScalarVariables[SPEEDID], newHeading_l, X);
+	    newPosition.y = avPosition.y + getProjection(avScalarVariables[SPEEDID], newHeading_l, Y);
+        //new position of obs[0]
+        obsNewHeading = obsScalarVariables[0][HEADID] + obsScalarVariables[0][WID];
+	    obsNewPosition.x = obsPosition[0].x + getProjection(obsScalarVariables[0][SPEEDID], obsNewHeading, X);
+	    obsNewPosition.y = obsPosition[0].y + getProjection(obsScalarVariables[0][SPEEDID], obsNewHeading, Y);
+        //distances
+	    oldDistance = getDisPointToPoint(avPosition.x, avPosition.y, obsNewPosition.x, obsNewPosition.y);
+	    newDistance = getDisPointToPoint(newPosition.x, newPosition.y, obsNewPosition.x, obsNewPosition.y);
+		while (newDistance &lt;= oldDistance)
+		{
+            modified = 2;
+			newHeading_l = newHeading_l - PI / 4;
+			if (newHeading_l &lt; -PI)
+			{
+				newHeading_l = 2 * PI + newHeading_l;
+			}
+	        newPosition.x = avPosition.x + getProjection(avScalarVariables[SPEEDID], newHeading_l, X);
+	        newPosition.y = avPosition.y + getProjection(avScalarVariables[SPEEDID], newHeading_l, Y);
+		    newDistance = getDisPointToPoint(newPosition.x, newPosition.y, obsNewPosition.x, obsNewPosition.y);
+            if(newHeading_l == avScalarVariables[HEADID])
+            {
+                 newDistance = oldDistance + 1;//for break out
+            }
+		}
+    }
+
+	return newHeading_l;
+}
+
+int deviate(int newDir)
+{
+    bool deviated = false;
+    int i = 0, absObs = 0, absAV = 0, dirObs, dirAV, result = newDir;
+
+    deviated = false;
+    for(i = 0; i &lt; ACTUALOBS; i++)
+    {
+        if(appeared[i] == 1)
+        {
+            absAV = abs(avScalarVariables[HEADID]);
+            absObs = abs(obsScalarVariables[i][HEADID]);
+            if(absAV!=0 &amp;&amp; absObs!=0)
+            {
+                dirAV = avScalarVariables[HEADID]/absAV;
+                dirObs = obsScalarVariables[i][HEADID]/absObs;
+                if((absAV + absObs == PI) &amp;&amp; (dirAV * dirObs == -1))
+                {
+                    deviated = true;
+			        result = avScalarVariables[HEADID] - PI / 4;
+			        if (result &lt; -PI)
+			        {
+				        result = 2 * PI + result;
+			        }
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+void avoid()
+{
+    int probe[1];
+    int newHeading = 0, angleToGoal = 0;
+    int originalGoalHeading = 0;
+    RotationalState rotationalGoalStates[NUMAV];
+    int i = 0;
+    Point staticObsVerdices_l[NUMSTATICOBSVERDICES] = staticObsVerdices;
+    
+    Point localPath[2];
+    Point obsPosition[ACTUALOBS];
+    RotationalState rotationalObsStates[ACTUALOBS];
+    LinearState linearObsStates[ACTUALOBS];
+	Point avPosition[NUMAV];
+    RotationalState rotationalAVStates[NUMAV];
+    LinearState linearAVStates[NUMAV];
+    Point goalPositions[NUMAV];
+    LinearState linearGoalStates[NUMAV];
+    localPath[0] = avpath[waypointsIndex];
+    localPath[1] = avpath[waypointsIndex+1];
+    probe[0] = 0;
+
+    for(i = 0; i &lt; ACTUALOBS; i++)
+    {
+        obsPosition[i].x = obsVectorVariables[i][POSITIONID][X];
+        obsPosition[i].y = obsVectorVariables[i][POSITIONID][Y];
+        rotationalObsStates[i].w = obsScalarVariables[i][WID];
+        rotationalObsStates[i].heading = obsScalarVariables[i][HEADID];
+        linearObsStates[i].acc = obsScalarVariables[i][ACCID];
+        linearObsStates[i].speed = obsScalarVariables[i][SPEEDID];
+        //obsStates[i].acc = 0;
+        //obsStates[i].speed = 0;
+    }
+    
+    avPosition[0].x = avVectorVariables[POSITIONID][X];
+    avPosition[0].y = avVectorVariables[POSITIONID][Y];
+    rotationalAVStates[0].w = avScalarVariables[WID];
+    rotationalAVStates[0].heading = avScalarVariables[HEADID];
+    linearAVStates[0].acc = avScalarVariables[ACCID];
+    linearAVStates[0].speed = avScalarVariables[SPEEDID];
+    //avStates[0].acc = 0;
+    //avStates[0].speed = 0;
+
+    goalPositions[0].x = goalVector[POSITIONID][X];
+    goalPositions[0].y = goalVector[POSITIONID][Y];
+
+    rotationalGoalStates[0].w = goalScalar[WID];
+    rotationalGoalStates[0].heading = goalScalar[HEADID];
+    linearGoalStates[0].acc = goalScalar[ACCID];
+    linearGoalStates[0].speed = goalScalar[SPEEDID];
+    //goalStates[0].acc = 0;
+    //goalStates[0].speed = 0;
+
+    collisionAvoidance(ACTUALOBS, appeared, NUMSTATICOBSS, staticObsVerdices_l, probe, obsPosition, rotationalObsStates, linearObsStates, avPosition, 
+    rotationalAVStates, linearAVStates, goalPositions, localPath, LENGTHPATH, rotationalGoalStates, linearGoalStates);
+
+    //dffHeading = rotationalGoalStates[0].heading;
+    //without modify, the agent would be drawn to the obstacle in some cases
+    angleToGoal = getAngle(avVectorVariables[POSITIONID][X], avVectorVariables[POSITIONID][Y], 
+                                      goalVector[POSITIONID][X],goalVector[POSITIONID][Y], ANGLESCALE);
+    newHeading = modify(obsPosition,avPosition[0],rotationalGoalStates[0].heading, angleToGoal);
+    //without deviate, the agent would be coming back and forth when the obstacle is moving exactly forward it
+    newHeading = deviate(newHeading);
+    if(newHeading != rotationalGoalStates[0].heading)
+    {
+        probe[0] = 2;
+        originalGoalHeading = rotationalGoalStates[0].heading;
+        rotationalGoalStates[0].heading = newHeading;
+    }
+
+    goalScalar[WID] = rotationalGoalStates[0].w;
+    goalScalar[HEADID] = rotationalGoalStates[0].heading;
+    goalScalar[ACCID] = linearGoalStates[0].acc;
+    goalScalar[SPEEDID] = linearGoalStates[0].speed;
+
+    avScalarVariables[HEADID] = goalScalar[HEADID];
+    avScalarVariables[ACCID] = goalScalar[ACCID];
+}
+
+void move()
+{
+    goalScalar[HEADID] = getAngle(avVectorVariables[POSITIONID][X], avVectorVariables[POSITIONID][Y], 
+                                      goalVector[POSITIONID][X],goalVector[POSITIONID][Y], ANGLESCALE);
+
+    avScalarVariables[HEADID] = goalScalar[HEADID];
+}
+
+void adjust()
+{
+    int i = 0;
+    for(i = 0; i &lt; SPACEDIMENSION; i++)
+    {
+         avVectorVariables[POSITIONID][i] = goalVector[POSITIONID][i]; 
+    }
+}
+
+void turn()
+{
+    int i = 0;
+
+    if(oldStatus != AVOIDING){adjust();}
+    for(i = 0; i &lt; SPACEDIMENSION; i++)
+    {
+         goalVector[POSITIONID][i] = WAYPOINTS[waypointsIndex][i]; 
+    }
+    goalScalar[SPEEDID] = MAXSCALAR[SPEEDID];
+    goalScalar[ACCID] = MAXSCALAR[ACCID];
+    goalScalar[HEADID] = getAngle(avVectorVariables[POSITIONID][X], avVectorVariables[POSITIONID][Y], 
+                                      goalVector[POSITIONID][X],goalVector[POSITIONID][Y], ANGLESCALE);
+    avScalarVariables[HEADID] = goalScalar[HEADID];
+    avScalarVariables[ACCID] = goalScalar[ACCID];
+    /*if(avScalarVariables[HEADID] &lt; goalScalar[HEADID])
+    {
+        goalScalar[WID] = MAXSCALAR[WID];
+    }
+    else if(avScalarVariables[HEADID] &gt; goalScalar[HEADID])
+    {
+        goalScalar[WID] = MINSCALAR[WID];
+    }
+    else if(avScalarVariables[HEADID] == goalScalar[HEADID])
+    {
+         goalScalar[WID] = 0;
+    }*/
+}
+
+void calcSafeRegion()
+{
+    widthSafeRegion--;
+}
+
+bool isOut()
+{
+    int i = 0;
+    int dis = 0;
+    bool result = true;
+
+    for(i = 0; i &lt; ACTUALOBS; i++)
+    {
+        if(appeared[i] == 1)
+        {
+            dis = getDisPointToPoint(obsVectorVariables[i][POSITIONID][X], obsVectorVariables[i][POSITIONID][Y], 
+                          avVectorVariables[POSITIONID][X], avVectorVariables[POSITIONID][Y]);
+            if(dis &lt;= VIEWRADIUS)
+            {
+                result = false;
+            }
+        }
+    }
+
+    return result;
+}
+
+bool reachWaypoint(int index)
+{
+    int currentDis = 0, newDis = 0, speed[2] = {0,0}, newPosi[SPACEDIMENSION] = {0,0};
+    int i = 0;
+    bool reach = false, overshoot = true;
+
+    for(i = 0; i &lt; SPACEDIMENSION; i++)
+    {
+        speed[i] = getProjection(avScalarVariables[SPEEDID], avScalarVariables[HEADID], i);
+        newPosi[i] = avVectorVariables[POSITIONID][i] + speed[i];
+    }
+
+    currentDis = getDisPointToPoint(avVectorVariables[POSITIONID][X], avVectorVariables[POSITIONID][Y], 
+                          WAYPOINTS[index][X], WAYPOINTS[index][Y]);
+    newDis = getDisPointToPoint(newPosi[X], newPosi[Y], WAYPOINTS[index][X], WAYPOINTS[index][Y]);
+    if(currentDis &lt; widthSafeRegion || newDis &lt; widthSafeRegion)
+    {
+        if(currentDis &lt; newDis)
+        {
+            reach = true;
+        }
+    }
+    return reach;
+}
+
+void makeDecision()
+{
+    bool reach = true, arriving = true;
+    int i = 0;
+    oldStatus = status;
+    status = UNKNOWN;
+    /*criticalIndex++;
+    if(criticalIndex == CRITICALLENGTH)
+    {
+        criticalIndex = 0;
+    }*/
+    //should the agent avoid any obstacles?
+    if(!isOut())
+    {
+        status = AVOIDING;
+        for(i = 0; i &lt; ACTUALOBS; i++)
+        {
+            if(appeared[i] == 1)
+            {
+                collided = isCollide(i);
+            }
+        } 
+    }
+    else
+    {
+        if(oldStatus == AVOIDING)
+        {
+            status = TURNING;
+        }
+    }
+        //judge if the vehicle has reached the next waypoint
+        reach = reachWaypoint(waypointsIndex);
+        arriving = reach&amp;(waypointsIndex == NUMWAYPOINTS-1);
+    //should the agent turn?
+    if(status != AVOIDING)
+    {
+        if(!reach)
+        {
+            status = MOVING;
+        }
+        //if the vehicle has reaches a waypoint and it is not the destination, then it turns its direction
+        if(reach &amp;&amp; !arriving)
+        {
+            status = TURNING;
+            waypointsIndex++;
+            calcSafeRegion();
+        }
+    }
+        if(arriving)
+        {
+            status = ARRIVING;
+        }
+}</declaration>
+		<location id="id4" x="-221" y="8">
+			<name x="-238" y="-25">STOP</name>
+		</location>
+		<location id="id5" x="-42" y="-26">
+			<committed/>
+		</location>
+		<location id="id6" x="221" y="-26">
+			<committed/>
+		</location>
+		<location id="id7" x="221" y="-127">
+			<committed/>
+		</location>
+		<location id="id8" x="-42" y="-127">
+			<name x="-59" y="-161">MOVE</name>
+			<label kind="invariant" x="-153" y="-127">timer&lt;=PM</label>
+		</location>
+		<location id="id9" x="-221" y="-127">
+			<name x="-231" y="-161">INIT</name>
+			<committed/>
+		</location>
+		<init ref="id9"/>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id8"/>
+			<label kind="guard" x="51" y="-93">status==
+AVOIDING</label>
+			<label kind="synchronisation" x="51" y="-59">change!</label>
+			<label kind="assignment" x="51" y="-42">avoid()</label>
+			<nail x="93" y="-25"/>
+			<nail x="93" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="-203" y="-144">start!</label>
+			<label kind="assignment" x="-153" y="-144">initialize()</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-195" y="-8">status==ARRIVING</label>
+			<nail x="-68" y="8"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-161" y="-93">status==
+TURNING</label>
+			<label kind="synchronisation" x="-161" y="-59">change!</label>
+			<label kind="assignment" x="-161" y="-42">turn()</label>
+			<nail x="-110" y="-25"/>
+			<nail x="-110" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-59" y="-93">status==
+MOVING</label>
+			<label kind="assignment" x="-42" y="-59">move()</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="161" y="1">stay!</label>
+			<label kind="assignment" x="-25" y="1">makeDecision()</label>
+			<nail x="221" y="17"/>
+			<nail x="-42" y="17"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="230" y="-85">proceed!</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="guard" x="25" y="-144">timer&gt;=PM</label>
+			<label kind="synchronisation" x="119" y="-144">invoke!</label>
+			<label kind="assignment" x="119" y="-127">timer=0</label>
+		</transition>
+	</template>
+	<template>
+		<name>ObsInitialization</name>
+		<parameter>const int ID</parameter>
+		<declaration>clock t;
+
+void updateVector(int space, int boundary)
+{
+    obsVectorVariables[ID][POSITIONID][space] += STEPPOS;
+    if(obsVectorVariables[ID][POSITIONID][space] &gt; boundary)
+    {
+        obsVectorVariables[ID][POSITIONID][space] = boundary;
+    }
+}
+
+void updateScalar(int vID, int step)
+{
+    obsScalarVariables[ID][vID] -= step;
+    if(obsScalarVariables[ID][vID] &lt; MINSCALAROBS[ID][vID])
+    {
+        obsScalarVariables[ID][vID] = MINSCALAROBS[ID][vID];
+    }
+}
+
+bool ready()
+{
+    if(avScalarVariables[SPEEDID] != 0 &amp;&amp; waypointsIndex &lt; NUMWAYPOINTS)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+void initialize()
+{
+    int maxExtension = 0;
+    int minExtension = 0;
+    int minDelta[SPACEDIMENSION] = {0,0};
+    int maxDelta[SPACEDIMENSION] = {0,0};
+    int target[SPACEDIMENSION] = {0,0};
+    int speed[SPACEDIMENSION] = {0,0};
+    int min[SPACEDIMENSION] = {0,0};
+    int max[SPACEDIMENSION] = {0,0};
+    int speedMax = getProjection(MAXSCALAROBS[ID][SPEEDID],PI/4,X);
+    int spaceIndex = 0;
+    int heading = 0;
+    int alpha = 0;
+
+    t = 0;
+    maxExtension = widthSafeRegion + speedMax * (PS + PC);
+    minExtension = widthSafeRegion + speedMax * PC;
+    heading = abs(avScalarVariables[HEADID]);
+
+    if(heading &gt;=0 &amp;&amp; heading&lt;=PI/4)
+    {
+        alpha = heading;
+    }
+    else if(heading &gt; PI/4 &amp;&amp; heading &lt;= PI/2)
+    {
+        alpha = PI/2 - heading;
+    }
+    else if(heading &gt; PI/2 &amp;&amp; heading &lt;= 3*PI/4)
+    {
+        alpha = heading - PI/2;
+    }
+    else if(heading &gt; 3*PI/4 &amp;&amp; heading &lt;= PI)
+    {
+        alpha = PI - heading;
+    }
+    alpha += PI/4;
+
+    for(spaceIndex = 0; spaceIndex &lt; SPACEDIMENSION; spaceIndex++)
+    {
+        maxDelta[spaceIndex] = getValidRange(maxExtension, alpha, ANGLESCALE);
+        minDelta[spaceIndex] = getValidRange(minExtension, alpha, ANGLESCALE);
+
+        speed[spaceIndex] = getProjection(avScalarVariables[SPEEDID],avScalarVariables[HEADID],spaceIndex);
+        target[spaceIndex] = avVectorVariables[POSITIONID][spaceIndex] + speed[spaceIndex]*PS;
+
+        if(avVectorVariables[POSITIONID][spaceIndex] &gt;= target[spaceIndex])
+        {
+            max[spaceIndex] = avVectorVariables[POSITIONID][spaceIndex];
+            min[spaceIndex] = target[spaceIndex];
+        }
+        else
+        {
+            max[spaceIndex] = target[spaceIndex];
+            min[spaceIndex] = avVectorVariables[POSITIONID][spaceIndex];        
+        }
+
+        minOut[spaceIndex] = min[spaceIndex] - maxDelta[spaceIndex];
+        minIn[spaceIndex] = min[spaceIndex] - minDelta[spaceIndex];
+        maxOut[spaceIndex] = max[spaceIndex] + maxDelta[spaceIndex];
+        maxIn[spaceIndex] = max[spaceIndex] + minDelta[spaceIndex];
+
+        if(minOut[spaceIndex] &lt; MINVECTOROBS[ID][POSITIONID][spaceIndex])
+        {
+            minOut[spaceIndex] = MINVECTOROBS[ID][POSITIONID][spaceIndex];
+        }
+        if(minIn[spaceIndex] &lt; MINVECTOROBS[ID][POSITIONID][spaceIndex])
+        {
+            minIn[spaceIndex] = MINVECTOROBS[ID][POSITIONID][spaceIndex];
+        }
+
+        if(maxOut[spaceIndex] &gt; MAXVECTOROBS[ID][POSITIONID][spaceIndex])
+        {
+            maxOut[spaceIndex] = MAXVECTOROBS[ID][POSITIONID][spaceIndex];
+        }
+        if(maxIn[spaceIndex] &gt; MAXVECTOROBS[ID][POSITIONID][spaceIndex])
+        {
+            maxIn[spaceIndex] = MAXVECTOROBS[ID][POSITIONID][spaceIndex];
+        }
+        
+        obsVectorVariables[ID][POSITIONID][spaceIndex] = minOut[spaceIndex];
+    }
+    
+    obsScalarVariables[ID][ACCID] = 0;
+    obsScalarVariables[ID][SPEEDID] = MAXSCALAROBS[ID][SPEEDID];
+    obsScalarVariables[ID][WID] = 0;
+    obsScalarVariables[ID][HEADID] = MAXSCALAROBS[ID][HEADID];
+}
+
+void adjust()
+{
+    int distance = getDisPointToPoint(obsVectorVariables[ID][POSITIONID][X], obsVectorVariables[ID][POSITIONID][Y], 
+                          avVectorVariables[POSITIONID][X], avVectorVariables[POSITIONID][Y]);
+    if(distance &lt; widthSafeRegion*4)
+    {
+        if(obsVectorVariables[ID][POSITIONID][X]&lt;avVectorVariables[POSITIONID][X])
+        {
+            obsVectorVariables[ID][POSITIONID][X] = obsVectorVariables[ID][POSITIONID][X] - 3*obsScalarVariables[ID][SPEEDID];
+        }
+        else
+        {
+            obsVectorVariables[ID][POSITIONID][X] = obsVectorVariables[ID][POSITIONID][X] + 3*obsScalarVariables[ID][SPEEDID];
+        }
+        if(obsVectorVariables[ID][POSITIONID][Y]&lt;avVectorVariables[POSITIONID][Y])
+        {
+            obsVectorVariables[ID][POSITIONID][Y] = obsVectorVariables[ID][POSITIONID][Y] - 3*obsScalarVariables[ID][SPEEDID];
+        }
+        else
+        {
+            obsVectorVariables[ID][POSITIONID][Y] = obsVectorVariables[ID][POSITIONID][Y] + 3*obsScalarVariables[ID][SPEEDID];
+        }
+    }
+}</declaration>
+		<location id="id10" x="136" y="110">
+			<name x="162" y="102">Appear</name>
+		</location>
+		<location id="id11" x="93" y="-136">
+			<label kind="invariant" x="119" y="-178">obsScalarVariables
+[ID][HEADID]
+ &gt;= MINSCALAROBS
+[ID][HEADID]</label>
+			<committed/>
+		</location>
+		<location id="id12" x="-59" y="110">
+			<label kind="invariant" x="-42" y="59">obsScalarVariables
+[ID][SPEEDID]
+ &gt;= MINSCALAROBS
+[ID][SPEEDID]</label>
+			<committed/>
+		</location>
+		<location id="id13" x="-340" y="-136">
+			<label kind="invariant" x="-323" y="-127">obsVectorVariables
+[ID][POSITIONID][Y]
+ &lt;= minIn[Y]</label>
+			<committed/>
+		</location>
+		<location id="id14" x="-340" y="110">
+			<label kind="invariant" x="-323" y="50">obsVectorVariables
+[ID][POSITIONID][Y]
+ &lt;= maxOut[Y]</label>
+			<committed/>
+		</location>
+		<location id="id15" x="-612" y="-25">
+			<name x="-622" y="-59">P1</name>
+			<label kind="invariant" x="-765" y="-68">obsVectorVariables
+[ID][POSITIONID][X]
+ &lt;= maxOut[X]</label>
+			<committed/>
+		</location>
+		<location id="id16" x="-612" y="-187">
+		</location>
+		<init ref="id16"/>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id11"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="93" y="-34">obsGo[ID]!</label>
+			<label kind="assignment" x="102" y="-17">appeared[ID]=1</label>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-85" y="-238">obsScalarVariables[ID][HEADID]
+ &gt; MINSCALAROBS[ID][HEADID]</label>
+			<label kind="assignment" x="-85" y="-204">updateScalar(HEADID, STEPHEAD)</label>
+			<nail x="68" y="-187"/>
+			<nail x="119" y="-187"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-221" y="136">obsScalarVariables[ID][SPEEDID]
+ &gt; MINSCALAROBS[ID][SPEEDID]</label>
+			<label kind="assignment" x="-221" y="178">updateScalar(SPEEDID, STEPSPEED)</label>
+			<nail x="-85" y="153"/>
+			<nail x="-34" y="153"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-323" y="-59">obsVectorVariables
+[ID][POSITIONID][Y]
+&gt;= minIn[Y]</label>
+			<label kind="assignment" x="-323" y="-8">obsVectorVariables
+[ID][POSITIONID][Y]=maxIn[Y]</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id12"/>
+			<label kind="assignment" x="-161" y="85">adjust()</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="assignment" x="-161" y="-161">adjust()</label>
+			<nail x="-59" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-442" y="-238">obsVectorVariables
+[ID][POSITIONID][Y]
+ &lt; minIn[Y]</label>
+			<label kind="assignment" x="-442" y="-187">updateVector(Y,minIn[Y])</label>
+			<nail x="-365" y="-170"/>
+			<nail x="-314" y="-170"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-518" y="-136">obsVectorVariables
+[ID][POSITIONID][X]
+&gt;= minIn[X]&amp;&amp;
+obsVectorVariables
+[ID][POSITIONID][X]
+ &lt;= maxIn[X]</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-433" y="127">obsVectorVariables
+[ID][POSITIONID][Y]
+ &lt; maxOut[Y]</label>
+			<label kind="assignment" x="-433" y="178">updateVector(Y,maxOut[Y])</label>
+			<nail x="-365" y="152"/>
+			<nail x="-314" y="152"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-518" y="0">obsVectorVariables
+[ID][POSITIONID][X]
+ &lt; minIn[X]||
+obsVectorVariables
+[ID][POSITIONID][X]
+ &gt; maxIn[X]</label>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-714" y="0">obsVectorVariables
+[ID][POSITIONID][X]
+ &lt; maxOut[X]</label>
+			<label kind="assignment" x="-731" y="51">updateVector(X,maxOut[X])</label>
+			<nail x="-637" y="25"/>
+			<nail x="-586" y="25"/>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-671" y="-153">ready()&amp;&amp;
+t&gt;=PTS&amp;&amp;
+t&lt;=PTE</label>
+			<label kind="assignment" x="-671" y="-102">initialize()</label>
+		</transition>
+	</template>
+	<template>
+		<name>ObsMove</name>
+		<parameter>const int ID</parameter>
+		<declaration>int divert = 0;
+
+void updateScalar(int vID, int step)
+{
+    obsScalarVariables[ID][vID] -= step;
+    if(obsScalarVariables[ID][vID] &lt; MINSCALAROBS[ID][vID])
+    {
+        obsScalarVariables[ID][vID] = MINSCALAROBS[ID][vID];
+    }
+}
+
+bool left()
+{
+    int i = 0;
+    bool left = false;
+
+    for(i = 0; i &lt; SPACEDIMENSION; i++)
+    {
+        left = (obsVectorVariables[ID][POSITIONID][i]==MAXVECTOR[POSITIONID][i]) || (obsVectorVariables[ID][POSITIONID][i]==MINVECTOR[POSITIONID][i]);
+        if(left)return left;
+    }
+    
+    return left;
+}
+
+bool isFar()
+{
+    int dis = getDisPointToPoint(obsVectorVariables[ID][POSITIONID][X], obsVectorVariables[ID][POSITIONID][Y], 
+                          avVectorVariables[POSITIONID][X], avVectorVariables[POSITIONID][Y]);
+    if(dis &gt; FARRADIUS)
+    {
+        return true;
+    }
+    if(hitWall() || left())
+    {
+        return true;
+    }
+
+    return false;
+}
+
+void update()
+{
+    int spaceIndex = 0;
+
+    for(spaceIndex = 0; spaceIndex &lt; SPACEDIMENSION; spaceIndex++)
+    {
+        obsVectorVariables[ID][POSITIONID][spaceIndex] += getProjection(obsScalarVariables[ID][SPEEDID], obsScalarVariables[ID][HEADID], spaceIndex);
+        if(obsVectorVariables[ID][POSITIONID][spaceIndex] &gt; MAXVECTOROBS[ID][POSITIONID][spaceIndex])
+        {
+            obsVectorVariables[ID][POSITIONID][spaceIndex] = MAXVECTOROBS[ID][POSITIONID][spaceIndex];
+        }
+        else if(obsVectorVariables[ID][POSITIONID][spaceIndex] &lt; MINVECTOROBS[ID][POSITIONID][spaceIndex])
+        {
+            obsVectorVariables[ID][POSITIONID][spaceIndex] = MINVECTOROBS[ID][POSITIONID][spaceIndex];
+        }
+    }
+    
+    obsScalarVariables[ID][HEADID] += obsScalarVariables[ID][WID];
+    if(obsScalarVariables[ID][HEADID] &gt; PI)
+    {
+        obsScalarVariables[ID][HEADID] = obsScalarVariables[ID][HEADID] - 2*PI;
+    }
+    else if(obsScalarVariables[ID][HEADID] &lt; -PI)
+    {
+        obsScalarVariables[ID][HEADID] = obsScalarVariables[ID][HEADID] + 2*PI;
+    }
+
+    /*obsScalarVariables[ID][SPEEDID] += obsScalarVariables[ID][ACCID];
+    if(obsScalarVariables[ID][SPEEDID] &gt; MAXSCALAROBS[ID][SPEEDID])
+    {
+        obsScalarVariables[ID][SPEEDID] = MAXSCALAROBS[ID][SPEEDID];
+    }
+    else if(obsScalarVariables[ID][SPEEDID] &lt; MINSCALAROBS[ID][SPEEDID])
+    {
+        obsScalarVariables[ID][SPEEDID] = MINSCALAROBS[ID][SPEEDID];
+    }*/
+
+    collided = isCollide(ID);
+    divert++;
+}
+
+void reset()
+{
+    obsScalarVariables[ID][SPEEDID] = MAXSCALAROBS[ID][SPEEDID];
+    //obsScalarVariables[ID][HEADID] = MAXSCALAROBS[ID][HEADID];
+}
+
+void turn(int mode)
+{
+    divert = 0;
+    if(mode == 0)
+    {
+        //
+    }
+    else if(mode == 1)
+    {
+        obsScalarVariables[ID][HEADID] += MAXSCALAROBS[ID][WID];
+        if(obsScalarVariables[ID][HEADID] &gt; PI)
+        {
+            obsScalarVariables[ID][HEADID] = obsScalarVariables[ID][HEADID] - 2*PI;
+        }
+    }
+    else if(mode == 2)
+    {
+        obsScalarVariables[ID][HEADID] += MINSCALAROBS[ID][WID];
+        if(obsScalarVariables[ID][HEADID] &lt; -PI)
+        {
+            obsScalarVariables[ID][HEADID] = 2*PI + obsScalarVariables[ID][HEADID];
+        }
+    }
+}
+
+void leave()
+{
+    appeared[ID] = 0;
+    obsScalarVariables[ID][WID] = 0;
+    obsScalarVariables[ID][ACCID] = 0;
+    obsScalarVariables[ID][SPEEDID] = 0;
+    collided = isCollide(ID);
+}</declaration>
+		<location id="id17" x="-382" y="-76">
+			<label kind="invariant" x="-263" y="-93">obsScalarVariables
+[ID][SPEEDID]
+ &gt;= MINSCALAROBS
+[ID][SPEEDID]</label>
+			<urgent/>
+		</location>
+		<location id="id18" x="-17" y="-195">
+			<name x="-68" y="-229">Disappear</name>
+		</location>
+		<location id="id19" x="-382" y="-195">
+		</location>
+		<location id="id20" x="-765" y="-195">
+		</location>
+		<init ref="id20"/>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id19"/>
+			<label kind="select" x="-364" y="-127">mode:int[0,2]</label>
+			<label kind="assignment" x="-348" y="-144">turn(mode)</label>
+			<nail x="-314" y="-76"/>
+			<nail x="-314" y="-178"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-501" y="-59">obsScalarVariables[ID][SPEEDID]
+ &gt; MINSCALAROBS[ID][SPEEDID]</label>
+			<label kind="assignment" x="-510" y="-17">updateScalar(SPEEDID, STEPSPEED)</label>
+			<nail x="-399" y="-34"/>
+			<nail x="-365" y="-34"/>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-552" y="-153">divert==5&amp;&amp;!isFar()</label>
+			<label kind="synchronisation" x="-510" y="-136">invoke?</label>
+			<label kind="assignment" x="-501" y="-119">reset()</label>
+			<nail x="-450" y="-178"/>
+			<nail x="-450" y="-76"/>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id19"/>
+			<label kind="guard" x="-459" y="-255">divert!=5&amp;&amp;!isFar()</label>
+			<label kind="synchronisation" x="-459" y="-238">invoke?</label>
+			<label kind="assignment" x="-459" y="-221">update()</label>
+			<nail x="-416" y="-237"/>
+			<nail x="-348" y="-237"/>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-246" y="-212">isFar()</label>
+			<label kind="synchronisation" x="-323" y="-212">invoke?</label>
+			<label kind="assignment" x="-187" y="-212">leave()</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-714" y="-212">obsGo[ID]?</label>
+			<label kind="assignment" x="-629" y="-212">collided = isCollide(ID)</label>
+		</transition>
+	</template>
+	<system>//agent_w = AVVariable(WID,CONSTRATE,NOTDIMENSIONAL);
+//agent_heading = AVVariable(HEADID,CONSTRATE,NOTDIMENSIONAL);
+
+//agent_acc = AVVariable(ACCID,CONSTRATE,NOTDIMENSIONAL);
+agent_speed = AVVariable(SPEEDID,ACCID,NOTDIMENSIONAL);
+
+agent_position_x = AVVariable(POSITIONID,SPEEDID,X);
+agent_position_y = AVVariable(POSITIONID,SPEEDID,Y);
+
+agent_controller = AVController();
+
+obsInit0 = ObsInitialization(0);
+obsMove0 = ObsMove(0);
+obsInit1 = ObsInitialization(1);
+obsMove1 = ObsMove(1);
+
+
+system agent_speed, agent_position_x, agent_position_y, agent_controller, obsInit0, obsMove0;
+    </system>
+	<queries>
+		<query>
+			<formula>A&lt;&gt; agent_controller.STOP</formula>
+			<comment>Reaching Destination Verification</comment>
+		</query>
+	</queries>
+</nta>
