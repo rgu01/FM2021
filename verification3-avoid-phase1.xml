@@ -121,8 +121,8 @@ const int STEPPOS = 50;
 const int STEPSPEED = 10;
 const int STEPW = 393;
 const int STEPHEAD = 393;
-const int PTS = 50;
-const int PTE = 51;
+const int PTS = 5;
+const int PTE = 75;
 
 import "FM2021/lib/lib.so" {
     int getProjection(int value, int angle, int axis);

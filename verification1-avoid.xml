@@ -47,37 +47,37 @@ const int ACTUALOBS = 1;
 const int NUMAV = 1;
 //const int INITOBS[NUMOBS][AVDIMENSION] = {{0,0,0,0,0}};
 //MAX: time unit - 500ms = 0.5s
-const int MAXSCALAR[AVSCALAR] = {393, //w:PI/-PI in 4s = 393 miliradian/500ms
-                                 PI,  //heading: PI miliradian
-                                 7,   //acc: to 20km/h:4s
-                                 8};  //speed: 20000m*10cm/60*60*2 (20km/h)
+const int MAXSCALAR[AVSCALAR] = {393, //angular speed
+                                 PI,  //heading
+                                 7,   //linear acceleration
+                                 8};  //linear speed
 const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{100*POSITIONSCALE}, {100*POSITIONSCALE}}; //position: 3000(10cm) * 10 = 3000m
 //MAX OBS: time unit - 500ms = 0.5s
-const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //w:PI/-PI in 4s = 393 miliradian/500ms
-                                             PI,  //heading: PI miliradian
-                                             7,   //acc: to 20km/h:4s
+const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, 
+                                             PI,  
+                                             7,   
                                              5},
-                                            {393, //w:PI/-PI in 4s = 393 miliradian/500ms
-                                             PI,  //heading: PI miliradian
-                                             7,   //acc: to 20km/h:4s
-                                             5}};  //speed: 20000m*10cm/60*60*2 (20km/h)
+                                            {393, 
+                                             PI,  
+                                             7,   
+                                             5}}; 
 const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{100*POSITIONSCALE}, {100*POSITIONSCALE}},{{100*POSITIONSCALE}, {100*POSITIONSCALE}}}; //position: 3000(10cm) * 10 = 3000m
                              
 //MIN: time unit - 500ms = 0.5s
-const int MINSCALAR[AVSCALAR] = {-393, //w:PI/-PI in 4s
-                                 -PI,  //heading: -PI/2 miliradian
-                                 -10,  //acc: from 20km/h:3s
-                                 0};    //speed: 0
-const int MINVECTOR[AVVECTOR][SPACEDIMENSION] = {{0},{0}};   //position:0
+const int MINSCALAR[AVSCALAR] = {-393, 
+                                 -PI,  
+                                 -10,  
+                                 0};    
+const int MINVECTOR[AVVECTOR][SPACEDIMENSION] = {{0},{0}};  
 //MIN: time unit - 500ms = 0.5s
-const int MINSCALAROBS[NUMOBS][AVSCALAR] = {{-393, //w:PI/-PI in 4s
-                                             -PI,  //heading: -PI/2 miliradian
-                                             -10,  //acc: from 20km/h:3s
+const int MINSCALAROBS[NUMOBS][AVSCALAR] = {{-393, 
+                                             -PI,  
+                                             -10,  
                                              5},
-                                            {-393, //w:PI/-PI in 4s
-                                             -PI,  //heading: -PI/2 miliradian
-                                             -10,  //acc: from 20km/h:3s
-                                             5}};    //speed: 0
+                                            {-393, 
+                                             -PI,  
+                                             -10,  
+                                             5}};  
 const int MINVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{0},{0}},{{0},{0}}};   //position:0
 //const int AVNORMALSPEED = MAXSCALAR[SPEEDID]/2;
 //INIT
@@ -93,19 +93,10 @@ const int NUMSTATICOBSS = 1;
 const int NUMSTATICOBSVERDICES = 4;
 const Point staticObsVerdices[NUMSTATICOBSVERDICES] = {{2,2},{2,5},{9,5},{9,2}};
 
-/* Scenario 1:*/
 const int NUMWAYPOINTS = 2;
 const int LENGTHPATH = NUMWAYPOINTS + 1;
 const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{5*POSITIONSCALE,5*POSITIONSCALE},{10*POSITIONSCALE,15*POSITIONSCALE}};
 const Point avpath[LENGTHPATH] = {{INITVECTOR[POSITIONID][X],INITVECTOR[POSITIONID][Y]},{WAYPOINTS[0][X],WAYPOINTS[0][Y]},{WAYPOINTS[1][X],WAYPOINTS[1][Y]}};
-/* Scenario 2:
-const int NUMWAYPOINTS = 5;
-const int LENGTHPATH = NUMWAYPOINTS + 1;
-const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{2*POSITIONSCALE,2*POSITIONSCALE},{5*POSITIONSCALE,0*POSITIONSCALE},{8*POSITIONSCALE,5*POSITIONSCALE},
-                                                   {10*POSITIONSCALE,8*POSITIONSCALE},{12*POSITIONSCALE,15*POSITIONSCALE}};
-const Point avpath[LENGTHPATH] = {{INITVECTOR[POSITIONID][X],INITVECTOR[POSITIONID][Y]},{WAYPOINTS[0][X],WAYPOINTS[0][Y]},{WAYPOINTS[1][X],WAYPOINTS[1][Y]},
-                                  {WAYPOINTS[2][X],WAYPOINTS[2][Y]},{WAYPOINTS[3][X],WAYPOINTS[3][Y]},{WAYPOINTS[4][X],WAYPOINTS[4][Y]}};
-*/
 
 const int UNKNOWN = 0;
 const int MOVING = 1;     //move straightly

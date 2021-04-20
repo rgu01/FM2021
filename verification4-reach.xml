@@ -83,7 +83,7 @@ const int MINSCALAROBS[NUMOBS][AVSCALAR] = {{-393, //w:PI/-PI in 4s
                                             {-393, //w:PI/-PI in 4s
                                              -PI,  //heading: -PI/2 miliradian
                                              -10,  //acc: from 20km/h:3s
-                                             3}};    //speed: 0
+                                             3}};    //speed:
 const int MINVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{0},{0}},{{0},{0}}};   //position:0
 //const int AVNORMALSPEED = MAXSCALAR[SPEEDID]/2;
 //INIT
