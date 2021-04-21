@@ -57,7 +57,7 @@ const int MAXSCALAR[AVSCALAR] = {393, //angular speed
                                  PI,  //heading
                                  7,   //linear acceleration
                                  8};  //linear speed
-const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{80*POSITIONSCALE}, {80*POSITIONSCALE}}; //position: 800(10cm) * 10 = 800 m
+const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{10*POSITIONSCALE}, {10*POSITIONSCALE}}; //position: 100(10cm) * 10 = 100 m
 //MAX OBS: time unit - 500ms = 0.5s
 const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //angular speed
                                              PI,  //angular speed
@@ -67,7 +67,7 @@ const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //angular speed
                                              PI,  //heading
                                              7,   //linear acceleration
                                              5}}; //linear speed
-const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{80*POSITIONSCALE}, {80*POSITIONSCALE}},{{80*POSITIONSCALE}, {80*POSITIONSCALE}}}; //position: 800(10cm) * 10 = 800 m
+const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{10*POSITIONSCALE}, {10*POSITIONSCALE}},{{10*POSITIONSCALE}, {10*POSITIONSCALE}}}; //position: 100(10cm) * 10 = 100 m
                              
 //MIN: time unit - 500ms = 0.5s
 const int MINSCALAR[AVSCALAR] = {-393, //w:PI/-PI in 4s
@@ -101,7 +101,7 @@ const Point staticObsVerdices[NUMSTATICOBSVERDICES] = {{2,2},{2,5},{9,5},{9,2}};
 
 const int NUMWAYPOINTS = 2;
 const int LENGTHPATH = NUMWAYPOINTS + 1;
-const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{5*POSITIONSCALE,5*POSITIONSCALE},{10*POSITIONSCALE,13*POSITIONSCALE}};
+const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{5*POSITIONSCALE,8*POSITIONSCALE},{8*POSITIONSCALE,2*POSITIONSCALE}};
 const Point avpath[LENGTHPATH] = {{INITVECTOR[POSITIONID][X],INITVECTOR[POSITIONID][Y]},{WAYPOINTS[0][X],WAYPOINTS[0][Y]},{WAYPOINTS[1][X],WAYPOINTS[1][Y]}};
 
 
