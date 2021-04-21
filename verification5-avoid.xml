@@ -49,7 +49,7 @@ const int Y = 1;
 const int NOTDIMENSIONAL = -1;
 //Max number of moving obstacles
 const int NUMOBS = 2;
-const int ACTUALOBS = NUMOBS;
+const int ACTUALOBS = 2;
 const int NUMAV = 1;
 //const int INITOBS[NUMOBS][AVDIMENSION] = {{0,0,0,0,0}};
 //MAX: time unit - 500ms = 0.5s
@@ -57,7 +57,7 @@ const int MAXSCALAR[AVSCALAR] = {393, //angular speed
                                  PI,  //heading
                                  7,   //linear acceleration
                                  8};  //linear speed
-const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{300*POSITIONSCALE}, {300*POSITIONSCALE}}; //position: 3000(10cm) * 10 = 3000m
+const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{80*POSITIONSCALE}, {80*POSITIONSCALE}}; //position: 800(10cm) * 10 = 800 m
 //MAX OBS: time unit - 500ms = 0.5s
 const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //angular speed
                                              PI,  //angular speed
@@ -67,7 +67,7 @@ const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //angular speed
                                              PI,  //heading
                                              7,   //linear acceleration
                                              5}}; //linear speed
-const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{300*POSITIONSCALE}, {300*POSITIONSCALE}},{{300*POSITIONSCALE}, {300*POSITIONSCALE}}}; //position: 3000(10cm) * 10 = 3000m
+const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{80*POSITIONSCALE}, {80*POSITIONSCALE}},{{80*POSITIONSCALE}, {80*POSITIONSCALE}}}; //position: 800(10cm) * 10 = 800 m
                              
 //MIN: time unit - 500ms = 0.5s
 const int MINSCALAR[AVSCALAR] = {-393, //w:PI/-PI in 4s
@@ -101,7 +101,7 @@ const Point staticObsVerdices[NUMSTATICOBSVERDICES] = {{2,2},{2,5},{9,5},{9,2}};
 
 const int NUMWAYPOINTS = 2;
 const int LENGTHPATH = NUMWAYPOINTS + 1;
-const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{5*POSITIONSCALE,5*POSITIONSCALE},{10*POSITIONSCALE,20*POSITIONSCALE}};
+const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{5*POSITIONSCALE,5*POSITIONSCALE},{10*POSITIONSCALE,13*POSITIONSCALE}};
 const Point avpath[LENGTHPATH] = {{INITVECTOR[POSITIONID][X],INITVECTOR[POSITIONID][Y]},{WAYPOINTS[0][X],WAYPOINTS[0][Y]},{WAYPOINTS[1][X],WAYPOINTS[1][Y]}};
 
 
@@ -121,7 +121,7 @@ const int STEPSPEED = 10;
 const int STEPW = 393;
 const int STEPHEAD = 393;
 const int PTS = 5;
-const int PTE = 20;
+const int PTE = 15;
 
 import "FM2021/lib/lib.so" {
     int getProjection(int value, int angle, int axis);
