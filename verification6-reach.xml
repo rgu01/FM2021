@@ -59,7 +59,7 @@ const int MAXSCALAR[AVSCALAR] = {393, //w:PI/-PI in 4s = 393 miliradian/500ms
                                  PI,  //heading: PI miliradian
                                  7,   //acc: to 20km/h:4s
                                  8};  //speed: 20000m*10cm/60*60*2 (20km/h)
-const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{10*POSITIONSCALE}, {10*POSITIONSCALE}}; //position: 3000(10cm) * 10 = 3000m
+const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{10*POSITIONSCALE}, {10*POSITIONSCALE}}; 
 //MAX OBS: time unit - 500ms = 0.5s
 const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //w:PI/-PI in 4s = 393 miliradian/500ms
                                              PI,  //heading: PI miliradian
@@ -69,7 +69,7 @@ const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //w:PI/-PI in 4s = 393 milirad
                                              PI,  //heading: PI miliradian
                                              7,   //acc: to 20km/h:4s
                                              5}};  //speed: 20000m*10cm/60*60*2 (20km/h)
-const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{10*POSITIONSCALE}, {10*POSITIONSCALE}},{{10*POSITIONSCALE}, {10*POSITIONSCALE}}}; //position: 3000(10cm) * 10 = 3000m
+const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{10*POSITIONSCALE}, {10*POSITIONSCALE}},{{10*POSITIONSCALE}, {10*POSITIONSCALE}}}; 
                              
 //MIN: time unit - 500ms = 0.5s
 const int MINSCALAR[AVSCALAR] = {-393, //w:PI/-PI in 4s
