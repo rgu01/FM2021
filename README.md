@@ -1,2 +1,4 @@
+- Download UPPAAL STRATEGO from: https://people.cs.aau.dk/~marius/stratego/
 - Run command: ./run.sh in Linux.
-- The binaries are UPPAAL STRATEGO. One can also download the binaries from: https://people.cs.aau.dk/~marius/stratego/
+- The lib folder contains the library implementing a collision-avoidance algorithm based on dipole flow field
+- Verification results will be printed in the folder named "results"
