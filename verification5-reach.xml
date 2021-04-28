@@ -20,12 +20,6 @@ typedef struct
     int y;
 }Point;
 
-typedef struct
-{
-    int numVertices;
-    Point vertices[10];
-}StaticObstacle;
-
 const int PM = 1; //period of movement
 const int PC = 2; //period of control
 const int PS = 3; //period of sensing
@@ -47,19 +41,17 @@ const int SPACEDIMENSION = 2;
 const int X = 0;
 const int Y = 1;
 const int NOTDIMENSIONAL = -1;
-/********************************************************************************/
 //Max number of moving obstacles
 const int NUMOBS = 2;
 const int ACTUALOBS = 2;
 const int NUMAV = 1;
-/********************************************************************************/
 //const int INITOBS[NUMOBS][AVDIMENSION] = {{0,0,0,0,0}};
 //MAX: time unit - 500ms = 0.5s
 const int MAXSCALAR[AVSCALAR] = {393, //w:PI/-PI in 4s = 393 miliradian/500ms
                                  PI,  //heading: PI miliradian
                                  7,   //acc: to 20km/h:4s
                                  8};  //speed: 20000m*10cm/60*60*2 (20km/h)
-const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{15*POSITIONSCALE}, {15*POSITIONSCALE}}; 
+const int MAXVECTOR[AVVECTOR][SPACEDIMENSION] = {{20*POSITIONSCALE}, {20*POSITIONSCALE}}; //position: 3000(10cm) * 10 = 3000m
 //MAX OBS: time unit - 500ms = 0.5s
 const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //w:PI/-PI in 4s = 393 miliradian/500ms
                                              PI,  //heading: PI miliradian
@@ -69,7 +61,7 @@ const int MAXSCALAROBS[NUMOBS][AVSCALAR] = {{393, //w:PI/-PI in 4s = 393 milirad
                                              PI,  //heading: PI miliradian
                                              7,   //acc: to 20km/h:4s
                                              5}};  //speed: 20000m*10cm/60*60*2 (20km/h)
-const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{15*POSITIONSCALE}, {15*POSITIONSCALE}},{{15*POSITIONSCALE}, {15*POSITIONSCALE}}}; 
+const int MAXVECTOROBS[NUMOBS][AVVECTOR][SPACEDIMENSION] = {{{20*POSITIONSCALE}, {20*POSITIONSCALE}},{{20*POSITIONSCALE}, {20*POSITIONSCALE}}}; //position: 3000(10cm) * 10 = 3000m
                              
 //MIN: time unit - 500ms = 0.5s
 const int MINSCALAR[AVSCALAR] = {-393, //w:PI/-PI in 4s
@@ -103,7 +95,7 @@ const Point staticObsVerdices[NUMSTATICOBSVERDICES] = {{2,2},{2,5},{9,5},{9,2}};
 
 const int NUMWAYPOINTS = 2;
 const int LENGTHPATH = NUMWAYPOINTS + 1;
-const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{5*POSITIONSCALE,5*POSITIONSCALE},{8*POSITIONSCALE,0*POSITIONSCALE}};
+const int WAYPOINTS[NUMWAYPOINTS][SPACEDIMENSION]={{5*POSITIONSCALE,5*POSITIONSCALE},{10*POSITIONSCALE,15*POSITIONSCALE}};
 const Point avpath[LENGTHPATH] = {{INITVECTOR[POSITIONID][X],INITVECTOR[POSITIONID][Y]},{WAYPOINTS[0][X],WAYPOINTS[0][Y]},{WAYPOINTS[1][X],WAYPOINTS[1][Y]}};
 
 const int UNKNOWN = 0;
@@ -122,7 +114,7 @@ const int STEPSPEED = 10;
 const int STEPW = 393;
 const int STEPHEAD = 393;
 const int PTS = 5;
-const int PTE = 10;
+const int PTE = 20;
 
 import "FM2021/lib/lib.so" {
     int getProjection(int value, int angle, int axis);
@@ -195,7 +187,9 @@ bool hitWall()
     }
     
     return hit;
-}</declaration>
+}
+
+</declaration>
 	<template>
 		<name x="5" y="5">AVVariable</name>
 		<parameter>const int VID, const int RATEID, const int SPACEID</parameter>
@@ -948,15 +942,6 @@ void adjust()
 			<target ref="id11"/>
 		</transition>
 		<transition>
-			<source ref="id16"/>
-			<target ref="id16"/>
-			<label kind="guard" x="-586" y="-238">ready()&amp;&amp;
-t&gt;=PTS</label>
-			<label kind="assignment" x="-586" y="-204">t = 0</label>
-			<nail x="-637" y="-221"/>
-			<nail x="-586" y="-221"/>
-		</transition>
-		<transition>
 			<source ref="id11"/>
 			<target ref="id10"/>
 			<label kind="synchronisation" x="93" y="-34">obsGo[ID]!</label>
@@ -1053,9 +1038,10 @@ obsVectorVariables
 		<transition>
 			<source ref="id16"/>
 			<target ref="id15"/>
-			<label kind="guard" x="-671" y="-153">ready()&amp;&amp;
-t&gt;=PTS</label>
-			<label kind="assignment" x="-671" y="-119">initialize()</label>
+			<label kind="guard" x="-671" y="-161">ready()&amp;&amp;
+t&gt;=PTS&amp;&amp;
+t&lt;=PTE</label>
+			<label kind="assignment" x="-671" y="-102">initialize()</label>
 		</transition>
 	</template>
 	<template>
@@ -1072,6 +1058,20 @@ void updateScalar(int vID, int step)
     }
 }
 
+bool left()
+{
+    int i = 0;
+    bool left = false;
+
+    for(i = 0; i &lt; SPACEDIMENSION; i++)
+    {
+        left = (obsVectorVariables[ID][POSITIONID][i]==MAXVECTOR[POSITIONID][i]) || (obsVectorVariables[ID][POSITIONID][i]==MINVECTOR[POSITIONID][i]);
+        if(left)return left;
+    }
+    
+    return left;
+}
+
 bool isFar()
 {
     int dis = getDisPointToPoint(obsVectorVariables[ID][POSITIONID][X], obsVectorVariables[ID][POSITIONID][Y], 
@@ -1080,7 +1080,7 @@ bool isFar()
     {
         return true;
     }
-    if(hitWall())
+    if(hitWall() || left())
     {
         return true;
     }
