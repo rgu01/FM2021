@@ -12,5 +12,3 @@
 ../verifyta -o1 -u verification4-reach.xml > results/reach4.txt
 ../verifyta -o1 -u verification5-avoid.xml > results/avoid5.txt
 ../verifyta -o1 -u verification5-reach.xml > results/reach5.txt
-../verifyta -o1 -u verification6-avoid.xml > results/avoid6.txt
-../verifyta -o1 -u verification6-reach.xml > results/reach6.txt
