@@ -1,3 +1,4 @@
+- These models are for reproducing the experimental results of paper "Model Checking Collision Avoidance of Nonlinear Autonomous Vehicle Models" for FM2021.
 - Download UPPAAL STRATEGO from: https://people.cs.aau.dk/~marius/stratego/
 - Run command: ./run.sh in Linux.
 - The lib folder contains the library implementing a collision-avoidance algorithm based on dipole flow field
